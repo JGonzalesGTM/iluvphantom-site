@@ -1,0 +1,27 @@
+services:
+  iluvphantom:
+    image: nginx:alpine
+    container_name: iluvphantom
+    restart: always
+    volumes:
+      # same path inside and outside so the installer's absolute `current` symlink resolves
+      - /docker/iluvphantom/site:/docker/iluvphantom/site:ro
+      - ./nginx/default.conf:/etc/nginx/conf.d/default.conf:ro
+    networks: [n8n_default]
+    labels:
+      - traefik.enable=true
+      - traefik.http.routers.iluvphantom.rule=Host(`iluvphantom.com`) || Host(`www.iluvphantom.com`)
+      - traefik.http.routers.iluvphantom.tls=true
+      - traefik.http.routers.iluvphantom.entrypoints=web,websecure
+      - traefik.http.routers.iluvphantom.tls.certresolver=mytlschallenge
+      - traefik.http.routers.iluvphantom.tls.domains[0].main=iluvphantom.com
+      - traefik.http.routers.iluvphantom.tls.domains[0].sans=www.iluvphantom.com
+      - traefik.http.services.iluvphantom.loadbalancer.server.port=80
+      - traefik.http.services.iluvphantom.loadbalancer.passhostheader=true
+      - traefik.http.middlewares.iluvphantom-www-redirect.redirectregex.regex=^https?://www\.iluvphantom\.com/(.*)
+      - traefik.http.middlewares.iluvphantom-www-redirect.redirectregex.replacement=https://iluvphantom.com/$${1}
+      - traefik.http.middlewares.iluvphantom-www-redirect.redirectregex.permanent=true
+      - traefik.http.routers.iluvphantom.middlewares=iluvphantom-www-redirect
+networks:
+  n8n_default:
+    external: true
